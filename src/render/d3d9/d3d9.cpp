@@ -1606,6 +1606,19 @@ SK_D3D9_Present_GrandCentral ( sk_d3d9_swap_dispatch_s* dispatch )
   if (dispatch->Type != SK_D3D9_PresentType::Device9Ex_PresentEx)
     pDevEx = nullptr;
 
+  /*
+  * avoid double processing when d9vk is used
+  *
+  * while there are instances of chained creation/presentation that might
+  * make sense to fix on d9vk's side, fixing D3D9SwapChainEx::Present
+  * vftable hook from d9vk is extremely messy, given D3D9Device(Ex)::Present
+  * on that side runs D3D9SwapChainEx::Present on an internally allocated
+  * implicit swapchain
+  */
+  thread_local bool processing = false;
+
+  bool process =
+    SK_D3D9_ShouldProcessPresentCall (dispatch->Source) && !processing;
 
   auto CallFunc = [&](void) ->
   HRESULT
@@ -1616,9 +1629,12 @@ SK_D3D9_Present_GrandCentral ( sk_d3d9_swap_dispatch_s* dispatch )
       {
         if (config.render.framerate.target_fps > 0.0f)   // Limit Configured
         {
-          // Now we WaitForVBLANK
-          extern void SK_D3DKMT_WaitForVBlank (void);
-                      SK_D3DKMT_WaitForVBlank ();
+          if (process)
+          {
+            // Now we WaitForVBLANK
+            extern void SK_D3DKMT_WaitForVBlank (void);
+                        SK_D3DKMT_WaitForVBlank ();
+          }
         }
       }
     }
@@ -1716,17 +1732,13 @@ SK_D3D9_Present_GrandCentral ( sk_d3d9_swap_dispatch_s* dispatch )
     return E_NOTIMPL;
   };
 
-  bool process =
-    SK_D3D9_ShouldProcessPresentCall (dispatch->Source);
-
-
-
   SK_RenderBackend& rb =
     SK_GetCurrentRenderBackend ();
 
 
   if (process || trigger_reset != reset_stage_e::Clear)
   {
+    processing = true;
     if ( rb.api == SK_RenderAPI::D3D9   ||
          rb.api == SK_RenderAPI::D3D9Ex ||
          rb.api == SK_RenderAPI::Reserved )
@@ -1761,6 +1773,7 @@ SK_D3D9_Present_GrandCentral ( sk_d3d9_swap_dispatch_s* dispatch )
 
       SK_D3D9_EndFrame ();
 
+      processing = false;
       return hr;
     }
 #endif
@@ -1878,7 +1891,7 @@ SK_D3D9_Present_GrandCentral ( sk_d3d9_swap_dispatch_s* dispatch )
     if (hr != D3D_OK && trigger_reset == reset_stage_e::Clear)
       trigger_reset = reset_stage_e::Initiate;
 
-
+    processing = false;
     return hr;
   }
 
