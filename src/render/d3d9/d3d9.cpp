@@ -1397,9 +1397,24 @@ SK_D3D9_SetFPSTarget ( D3DPRESENT_PARAMETERS* pPresentationParameters,
         }
       };
 
-    if (       config.render.framerate.present_interval != SK_NoPreference &&
+    int presentationInterval =
+      config.render.framerate.present_interval;
+
+    // Latent VSync...
+    if  ( ( config.render.framerate.present_interval == 0 &&
+            config.render.framerate.target_fps > 0.0f     &&
+            pPresentationParameters->Windowed == FALSE     ) &&
+          ( config.render.framerate.tearing_mode ==
+              SK_TearingMode::AlwaysOff                   ||
+            config.render.framerate.tearing_mode ==
+              SK_TearingMode::AlwaysOff_LowLatency         ) )
+    {
+      presentationInterval = 1;
+    }
+
+    if (                           presentationInterval != SK_NoPreference &&
          (! _SK_D3D9_IsPresentIntervalEquivalent (
-               config.render.framerate.present_interval,
+                                   presentationInterval,
           pPresentationParameters->PresentationInterval) ) )
     {
       SK_LOGi0 (
@@ -1407,24 +1422,24 @@ SK_D3D9_SetFPSTarget ( D3DPRESENT_PARAMETERS* pPresentationParameters,
 
         SK_D3D9_GetNominalPresentInterval (
           pPresentationParameters->PresentationInterval
-        ),     config.render.framerate.present_interval
+        ),                         presentationInterval
       );
 
-      if (     config.render.framerate.present_interval == 0)
+      if (                       presentationInterval == 0)
         pPresentationParameters->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-      else if (config.render.framerate.present_interval == 1)
+      else if (                  presentationInterval == 1)
         pPresentationParameters->PresentationInterval = D3DPRESENT_INTERVAL_ONE;
-      else if (config.render.framerate.present_interval == 2)
+      else if (                  presentationInterval == 2)
         pPresentationParameters->PresentationInterval = D3DPRESENT_INTERVAL_TWO;
-      else if (config.render.framerate.present_interval == 3)
+      else if (                  presentationInterval == 3)
         pPresentationParameters->PresentationInterval = D3DPRESENT_INTERVAL_THREE;
-      else if (config.render.framerate.present_interval == 4)
+      else if (                  presentationInterval == 4)
         pPresentationParameters->PresentationInterval = D3DPRESENT_INTERVAL_FOUR;
       else
       {
         SK_LOGi0 (
           L"Invalid Present Interval: %d Requested; defaulting to 1:1 Refresh",
-            config.render.framerate.present_interval );
+                                 presentationInterval );
 
         pPresentationParameters->PresentationInterval = D3DPRESENT_INTERVAL_ONE;
       }
