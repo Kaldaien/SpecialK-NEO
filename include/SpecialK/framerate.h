@@ -793,6 +793,8 @@ SK_DWM_GetCompositionTimingInfo (DWM_TIMING_INFO *pTimingInfo);
 void SK_Framerate_WaitUntilQPC       (LONGLONG llQPC, HANDLE& hTimer);
 void SK_Framerate_EnergyControlPanel (void);
 
+bool SK_LatentSync_AllowFrameSkip    (void);
+
 void SK_ImGui_DrawGraph_FramePacing  (void);
 void SK_ImGui_DrawFramePercentiles   (void);
 void SK_ImGui_DrawGraph_Latency      (bool predraw);
@@ -817,6 +819,7 @@ extern int  __SK_LatentSyncSkip;
 
 extern float __target_fps;
 extern float __target_fps_bg;
+extern float __target_fps_temp;
 
 extern LONGLONG __SK_LatentSyncPostDelay;
 

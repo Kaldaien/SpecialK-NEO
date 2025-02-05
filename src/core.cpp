@@ -4747,6 +4747,24 @@ SK_API_IsDXGIBased (SK_RenderAPI api)
 }
 
 bool
+SK_API_IsLayeredOnD3D12 (SK_RenderAPI api)
+{
+  switch (api)
+  {
+    case SK_RenderAPI::D3D12:
+    case SK_RenderAPI::D3D8On12:
+    case SK_RenderAPI::DDrawOn12:
+    case SK_RenderAPI::GlideOn12:
+      return true;
+    default:
+      return
+        ( static_cast <UINT> (api) &
+          static_cast <UINT> (SK_RenderAPI::D3D12) )
+       == static_cast <UINT> (SK_RenderAPI::D3D12);
+  }
+}
+
+bool
 SK_API_IsLayeredOnD3D11 (SK_RenderAPI api)
 {
   switch (api)
@@ -4762,6 +4780,21 @@ SK_API_IsLayeredOnD3D11 (SK_RenderAPI api)
         ( static_cast <UINT> (api) &
           static_cast <UINT> (SK_RenderAPI::D3D11) )
        == static_cast <UINT> (SK_RenderAPI::D3D11);
+  }
+}
+
+bool
+SK_API_IsLayeredOnD3D10 (SK_RenderAPI api)
+{
+  switch (api)
+  {
+    case SK_RenderAPI::D3D10:
+      return true;
+    default:
+      return
+        ( static_cast <UINT> (api) &
+          static_cast <UINT> (SK_RenderAPI::D3D10) )
+       == static_cast <UINT> (SK_RenderAPI::D3D10);
   }
 }
 
